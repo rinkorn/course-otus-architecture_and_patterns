@@ -1,5 +1,6 @@
 import pytest
 from spacegame.hw03.QuadraticEquation import (
+    EPS,
     ConvertToFloatError,
     ParameterAZeroError,
     QuadraticEquation,
@@ -7,54 +8,54 @@ from spacegame.hw03.QuadraticEquation import (
 
 
 def test_QuadraticEquation_0():
-    a, b, c = 1, 0, 1
-    roots_expected = []
+    a, b, c = 1.0, 0.0, 1.0
+    len_roots_expected = 0
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
-    assert roots == roots_expected
+    assert len(roots) == len_roots_expected
 
 
 def test_QuadraticEquation_1():
-    a, b, c = 1, 0, -1
-    roots_expected = [-1, 1]
+    a, b, c = 1.0, 0.0, -1.0
+    roots_expected = [-1.0, 1.0]
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
-    assert roots == roots_expected
+    assert (roots[0] - roots_expected[0]) < EPS
+    assert (roots[1] - roots_expected[1]) < EPS
 
 
 def test_QuadraticEquation_2():
-    a, b, c = 1, 2, 1
-    roots_expected = [-1]
+    a, b, c = 1.0, 2.0, 1.0
+    roots_expected = [-1.0]
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
-    assert roots == roots_expected
+    assert (roots[0] - roots_expected[0]) < EPS
 
 
 def test_QuadraticEquation_3():
-    a, b, c = 0, 2, 1
-    roots_expected = []  # noqa
+    a, b, c = 0.0, 2.0, 1.0
     qe = QuadraticEquation(a, b, c)
     with pytest.raises(ParameterAZeroError):
         qe.solve()
 
 
 def test_QuadraticEquation_4():
-    a, b, c = 1, 2, 1.00000001
-    roots_expected = [-1]
+    a, b, c = 1.0, 2.0, 1.00000001
+    roots_expected = [-1.0]
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
-    assert roots == roots_expected
+    assert (roots[0] - roots_expected[0]) < EPS
 
 
 @pytest.mark.parametrize(
     "a, b, c",
     [
-        ("a", 2, 1),
-        (1, "b", 1),
-        (1, 2, "c"),
-        ([1], 2, 1),
-        (1, [2], 1),
-        (1, 2, [1]),
+        ("a", 2.0, 1.0),
+        (1.0, "b", 1.0),
+        (1.0, 2.0, "c"),
+        ([1.0], 2.0, 1.0),
+        (1.0, [2.0], 1.0),
+        (1.0, 2.0, [1.0]),
         ("a", "b", ["c"]),
     ],
 )

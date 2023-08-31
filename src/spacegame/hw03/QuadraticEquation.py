@@ -39,6 +39,6 @@ class QuadraticEquation:
 
 
 if __name__ == "__main__":
-    equation = QuadraticEquation(1, 2, 1.0000001)
+    equation = QuadraticEquation(1.0, 2.0, 1.0000001)
     roots = equation.solve()
     print(f"Roots: {roots}")
