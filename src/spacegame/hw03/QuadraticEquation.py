@@ -1,7 +1,7 @@
 EPS = 1e-7
 
 
-class ParamAZeroError(Exception):
+class ParameterAZeroError(Exception):
     pass
 
 
@@ -10,7 +10,7 @@ class ConvertToFloatError(Exception):
 
 
 class QuadraticEquation:
-    def __init__(self, a, b, c) -> None:
+    def __init__(self, a: float, b: float, c: float) -> None:
         self.a = a
         self.b = b
         self.c = c
@@ -26,15 +26,15 @@ class QuadraticEquation:
         discr = b**2 - 4 * a * c
 
         if abs(a) < EPS:
-            raise ParamAZeroError
+            raise ParameterAZeroError
 
-        roots = [None, None]
+        roots = []
         if discr > EPS:
-            roots[0] = (-b + (discr) ** 0.5) / (2 * a)
-            roots[1] = (-b - (discr) ** 0.5) / (2 * a)
+            roots.append((-b + (discr) ** 0.5) / (2 * a))
+            roots.append((-b - (discr) ** 0.5) / (2 * a))
             roots.sort()
         elif abs(discr) < EPS:
-            roots[0] = -b / (2 * a)
+            roots.append(-b / (2 * a))
         return roots
 
 

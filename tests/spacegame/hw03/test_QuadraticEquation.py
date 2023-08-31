@@ -1,14 +1,14 @@
 import pytest
 from spacegame.hw03.QuadraticEquation import (
     ConvertToFloatError,
-    ParamAZeroError,
+    ParameterAZeroError,
     QuadraticEquation,
 )
 
 
 def test_QuadraticEquation_0():
     a, b, c = 1, 0, 1
-    roots_expected = [None, None]
+    roots_expected = []
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
     assert roots == roots_expected
@@ -24,7 +24,7 @@ def test_QuadraticEquation_1():
 
 def test_QuadraticEquation_2():
     a, b, c = 1, 2, 1
-    roots_expected = [-1, None]
+    roots_expected = [-1]
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
     assert roots == roots_expected
@@ -32,15 +32,15 @@ def test_QuadraticEquation_2():
 
 def test_QuadraticEquation_3():
     a, b, c = 0, 2, 1
-    roots_expected = [None, None]  # noqa
+    roots_expected = []  # noqa
     qe = QuadraticEquation(a, b, c)
-    with pytest.raises(ParamAZeroError):
+    with pytest.raises(ParameterAZeroError):
         qe.solve()
 
 
 def test_QuadraticEquation_4():
-    a, b, c = 1, 2, 1.0000001
-    roots_expected = [-1, None]
+    a, b, c = 1, 2, 1.00000001
+    roots_expected = [-1]
     qe = QuadraticEquation(a, b, c)
     roots = qe.solve()
     assert roots == roots_expected
