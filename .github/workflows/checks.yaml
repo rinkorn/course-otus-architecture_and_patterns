@@ -12,7 +12,7 @@ on:
     branches:
       - "*"
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkouting
@@ -33,6 +33,8 @@ jobs:
           poetry run ruff src/ tests/
       - name: Run mypy
         run: poetry run mypy src/ tests/
+      - name: Run pytest
+        run: pytest tests/ --cov --cov-report html --cov-report term-missing --cov-fail-under 75
       - name: Build wheel
-        run: |
-          poetry build
+        run: poetry build
+      
