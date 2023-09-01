@@ -1,5 +1,8 @@
 name: Run checks on any Push event
 
+env:
+  SHA_VAR: "${{ github.sha }}"
+
 on:
   push:
     tags:
@@ -34,7 +37,12 @@ jobs:
       - name: Run mypy
         run: poetry run mypy src/ tests/
       - name: Run pytest
-        run: pytest tests/ --cov --cov-report html --cov-report term-missing --cov-fail-under 75
+        run: poetry run pytest tests/ --cov --cov-report html --cov-report term-missing --cov-fail-under 75
+        
+  build:
+    runs-on: ubuntu-latest
+    needs: [tests]
+    steps:
       - name: Build wheel
         run: poetry build
       
