@@ -1,4 +1,4 @@
-name: Run checks and tests on any Push event
+name: Run checks on any Push event
 
 on:
   push:
