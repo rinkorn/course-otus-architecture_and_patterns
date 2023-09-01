@@ -37,12 +37,13 @@ jobs:
       - name: Run mypy
         run: poetry run mypy src/ tests/
       - name: Run pytest
-        run: poetry run pytest tests/ 
-
-  build:
-    runs-on: ubuntu-latest
-    needs: [tests]
-    steps:
+        run: poetry run pytest tests/
       - name: Build wheel
         run: poetry build
-      
+
+  # build:
+  #   runs-on: ubuntu-latest
+  #   needs: [tests]
+  #   steps:
+  #     - name: Build wheel
+  #       run: poetry build
