@@ -1,4 +1,4 @@
-name: Run tests on any Push event
+name: Run checks and tests on any Push event
 
 on:
   push:
@@ -28,7 +28,9 @@ jobs:
           poetry config virtualenvs.in-project true
           poetry install
       - name: Run ruff
-        run: poetry run ruff src/ tests/
+        run: |
+          ls -Falh
+          poetry run ruff src/ tests/
       - name: Run mypy
         run: poetry run mypy src/ tests/
       - name: Build wheel
