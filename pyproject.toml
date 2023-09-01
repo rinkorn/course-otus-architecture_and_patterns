@@ -8,6 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.10"
 pygame = "^2.5.1"
+pytest-mock = "^3.11.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.0"
@@ -34,7 +35,8 @@ ignore = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov --cov-report html --cov-report term-missing --cov-fail-under 75"
+# addopts = "--cov --cov-report html --cov-report term-missing --cov-fail-under 75"
+addopts = "--cov --cov-report term-missing --cov-fail-under 75"
 
 [tool.coverage.run]
 source = ["src"]
