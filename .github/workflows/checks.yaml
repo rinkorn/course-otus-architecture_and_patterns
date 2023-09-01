@@ -30,6 +30,6 @@ jobs:
           poetry shell
           poetry install
       - name: Run ruff
-        run: ruff src/ tests/
+        run: poetry run python3 -m ruff src/ tests/
       - name: Run mypy
-        run: mypy .
+        run: poetry run python3 -m mypy src/ tests/
