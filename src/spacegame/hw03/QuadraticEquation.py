@@ -20,7 +20,7 @@ class QuadraticEquation:
             a = float(self.a)
             b = float(self.b)
             c = float(self.c)
-        except:
+        except:  # noqa
             raise ConvertToFloatError
 
         discr = b**2 - 4 * a * c
