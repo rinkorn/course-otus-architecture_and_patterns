@@ -1,10 +1,15 @@
 # %%
 import abc
 import math
+from typing import Any
 
 
-class Vector:
-    def __init__(self, data=[]):
+class IVector(abc.ABC):
+    pass
+
+
+class Vector(IVector):
+    def __init__(self, data: list):
         if not isinstance(data, type(self) | list):
             raise TypeError("Wrong type of vector data.")
         if len(data) != 2:
@@ -13,6 +18,11 @@ class Vector:
 
     def __len__(self):
         return len(self.data)
+
+    def __getitem__(self, i):
+        if i > len(self):
+            raise ValueError("Can't do that.")
+        return self.data[i]
 
     def __add__(self, other):
         if not isinstance(other, type(self)):
@@ -43,7 +53,34 @@ def isVectorType(value):
         raise TypeError("Wrong type. Must be 'Vector'.")
 
 
-class Movable(abc.ABC):
+class IUObject(abc.ABC):
+    @abc.abstractmethod
+    def get_property(self, attr: str):
+        pass
+
+    @abc.abstractmethod
+    def set_property(self, attr: str, value: Any):
+        pass
+
+
+class UObject(IUObject):
+    def __init__(self):
+        self.hashmap = {}
+
+    def get_property(self, attr: str):
+        return self.hashmap[attr]
+
+    def set_property(self, attr: str, value: Any):
+        self.hashmap[attr] = value
+
+
+class ICommand(abc.ABC):
+    @abc.abstractmethod
+    def execute(self):
+        pass
+
+
+class IMovable(abc.ABC):
     @abc.abstractmethod
     def get_position(self):
         pass
@@ -57,37 +94,44 @@ class Movable(abc.ABC):
         pass
 
 
-class Move(Movable):
-    def __init__(self, position: Vector, velocity: Vector):
-        if isVectorType(position):
-            self.position = position
-        if isVectorType(velocity):
-            self.velocity = velocity
+class MoveAdapter(IMovable):
+    def __init__(self, o: IUObject):
+        self.o = o
 
     def get_position(self):
-        try:
-            return self.position
-        except:  # noqa
-            raise ValueError("Can't get position")
+        return self.o.get_property("position")
 
     def get_velocity(self):
-        try:
-            return self.velocity
-        except:  # noqa
-            raise ValueError("Can't get velocity")
+        d = self.o.get_property("direction")
+        n = self.o.get_property("direction_numbers")
+        v = self.o.get_property("velocity")
+        # v0 = v[0] * math.cos(float(d) / 360 * n)
+        # v1 = v[1] * math.sin(float(d) / 360 * n)
+        v0 = v[0] * math.cos(float(d) / (2.0 * math.pi) * n)
+        v1 = v[1] * math.sin(float(d) / (2.0 * math.pi) * n)
+        print(math.cos(float(d) / (2.0 * math.pi) * n))
+        print(math.sin(float(d) / (2.0 * math.pi) * n))
+        print(math.cos(float(d) / 360 * n))
+        print(math.sin(float(d) / 360 * n))
+        print(v0, v1)
+        return Vector([v0, v1])
 
     def set_position(self, new_position):
-        if isVectorType(new_position):
-            self.position = new_position
+        self.o.set_property("position", new_position)
+
+
+class MoveCmd(ICommand):
+    def __init__(self, m: IMovable):
+        self.m = m
 
     def execute(self):
-        position = self.get_position()
-        velocity = self.get_velocity()
+        position = self.m.get_position()
+        velocity = self.m.get_velocity()
         new_position = position + velocity
-        self.set_position(new_position)
+        self.m.set_position(new_position)
 
 
-class Rotable(abc.ABC):
+class IRotable(abc.ABC):
     @abc.abstractmethod
     def get_direction(self):
         pass
@@ -97,94 +141,45 @@ class Rotable(abc.ABC):
         pass
 
 
-class Rotate(Rotable):
-    def __init__(self, direction, angular_velocity, direction_numbers):
-        self.direction = direction
-        self.angular_velocity = angular_velocity
-        self.direction_numbers = direction_numbers
+class RotateAdapter(IRotable):
+    def __init__(self, o: IUObject):
+        self.o = o
 
     def get_direction(self):
-        return self.direction
+        return self.o.get_property("direction")
 
-    def set_direction(self, new_direction):
-        self.direction = new_direction
+    def set_direction(self, new_direction: IVector):
+        self.o.set_property("direction", new_direction)
+
+
+class RotateCmd(ICommand):
+    def __init__(self, r: IRotable):
+        self.r = r
 
     def execute(self):
-        d = self.get_direction()
-        v = self.angular_velocity()
-        new_direction = d + v % self.direction_numbers
+        d = self.r.get_direction()
+        n = self.r.direction_number()
+        v = self.r.angular_velocity()
+        new_direction = d + v % n
         self.set_direction(new_direction)
 
 
-class IUObject(abc.ABC):
-    @abc.abstractmethod
-    def get_property(self, attr):
-        pass
-
-    @abc.abstractmethod
-    def set_property(self, attr, value):
-        pass
-
-
-class UObject(IUObject):
-    def get_property(self, attr):
-        return self.__dict__[attr]
-
-    def set_property(self, attr, value):
-        self.__dict__[attr] = value
-
-
-class MovableAdapter(Movable, Rotable, UObject):
-    def __init__(
-        self, position, velocity, direction, angular_velocity, direction_numbers
-    ):
-        self.position = position
-        self.velocity = velocity
-        self.direction = direction
-        self.angular_velocity = angular_velocity
-        self.direction_numbers = direction_numbers
-
-    def get_property(self, attr):
-        # return super().get_property(attr)
-        return self.__dict__[attr]
-
-    def set_property(self, attr, value):
-        # return super().set_property(attr, value)
-        self.__dict__[attr] = value
-
-    def get_position(self):
-        return self.get_property("position")
-
-    def set_position(self, new_position):
-        self.set_property("position", new_position)
-
-    def get_velocity(self):
-        d = self.get_property("direction")
-        dn = self.get_property("direction_numbers")
-        v = self.get_property("velocity")
-
-        d = float(d)
-        v0 = v[0] * math.cos(d / (2 * math.pi) * dn)
-        v1 = v[1] * math.sin(d / (2 * math.pi) * dn)
-        new_v = [v0, v1]
-        return new_v
-
-    def get_direction(self):
-        return super().get_direction()
-
-    def set_direction(self):
-        return super().set_direction()
-
-
 if __name__ == "__main__":
-    position = p = Vector([12, 5])
-    velocity = v = Vector([-7, 3])
-    direction = d = 0
-    angular_velocity = av = 0
-    direction_numbers = dn = 8
-    move = Move(p, v)
-    move.execute()
-    print(move.get_position())
+    starship = UObject()
+    starship.set_property("position", Vector([12.0, 5.0]))
+    starship.set_property("velocity", Vector([-7.0, 3.0]))
+    starship.set_property("direction", 0)
+    starship.set_property("direction_numbers", 8)
+    starship.set_property("angular_velocity", 0)
+
+    MoveCmd(MoveAdapter(starship)).execute()
+
+    print(starship.get_property("position"))
+    # print(starship.get_property("direction"))
+
+    # move = MoveCmd(p, v)
+    # move.execute()
+    # print(move.get_position())
     # m = MovableAdapter(p, v, d, av, dn)
     # print(m.get_position())
     # print(m.get_velocity())

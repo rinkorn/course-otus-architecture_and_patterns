@@ -1,9 +1,9 @@
 import pytest
 from spacegame.hw05.hw05 import (
-    Movable,
-    MovableAdapter,
+    IMovable,
+    IRotable,
     Move,
-    Rotable,
+    MoveAdapter,
     Rotate,
     UObject,
     Vector,
