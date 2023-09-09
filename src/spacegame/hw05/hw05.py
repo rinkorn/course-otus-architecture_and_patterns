@@ -63,8 +63,11 @@ class Vector(IVector):
     def __radd__(self, other: IVector):
         return self.__add__(other)
 
-    def __eq__(self, other: IVector) -> bool:
-        return self.coords == other.coords
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Vector):
+            return self.coords == other.coords
+        else:
+            raise ValueError("Other object must be Vector.")
 
     def __call__(self):
         return self.coords
@@ -113,7 +116,7 @@ class IMovable(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_position(self):
+    def set_position(self, position: IVector):
         pass
 
 
@@ -172,7 +175,7 @@ class IRotable(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_direction(self):
+    def set_direction(self, direction: IVector):
         pass
 
 
@@ -213,10 +216,10 @@ if __name__ == "__main__":
     starship.set_property("direction_numbers", 8)
     starship.set_property("angular_velocity", -1)
 
-    cmd = MoveCmd(MovableAdapter(starship))
-    cmd.execute()
+    cmd_move = MoveCmd(MovableAdapter(starship))
+    cmd_move.execute()
     print(starship.get_property("position"))
 
-    cmd = RotateCmd(RotableAdapter(starship))
-    cmd.execute()
+    cmd_rotate = RotateCmd(RotableAdapter(starship))
+    cmd_rotate.execute()
     print(starship.get_property("direction"))
