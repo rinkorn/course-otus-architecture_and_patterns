@@ -1,63 +1,88 @@
+import os
+
 import pytest
 from spacegame.hw05.hw05 import (
     IMovable,
-    IRotable,
-    Move,
+    IUObject,
+    IVector,
     MoveAdapter,
-    Rotate,
+    MoveCmd,
     UObject,
     Vector,
 )
 
+"""
+Остался вопрос к тому что именно нужно мокать, UObject или MoveAdapter
 
-def test_Move_0():
-    position = Vector([12, 5])
-    velocity = Vector([-7, 3])
-    m = Move(position, velocity)
-    m.execute()
-    new_postition = m.get_position()
+Если честно, то до конца не понял как писать предложенные тесты.
+
+Может быть есть правильные примеры на python?
+"""
+
+
+def test_Move_0(mocker):
+    """
+    Для объекта, находящегося в точке (12, 5) и движущегося со скоростью
+    (-7, 3) движение меняет положение объекта на (5, 8)
+    """
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_position")
+    mock.return_value = Vector([12, 5])
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_velocity")
+    mock.return_value = Vector([-7, 3])
+
+    obj = UObject()
+    movable_obj = MoveAdapter(obj)
+    cmd = MoveCmd(movable_obj)
+    cmd.execute()
+    new_position = movable_obj.get_position()
     expected_position = Vector([5, 8])
-    assert m.get_position() == expected_position
+    assert new_position == expected_position
 
 
-def test_Move_1():
-    position = None
-    velocity = Vector([-7, 3])
-    # velocity = mocker.patch('Vector', return_value=[-7, 3])
+def test_Move_1(mocker):
+    """
+    Попытка сдвинуть объект, у которого невозможно прочитать
+    положение в пространстве, приводит к ошибке
+    """
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_velocity")
+    mock.return_value = Vector([-7, 3])
+
+    obj = UObject()
+    movable_obj = MoveAdapter(obj)
+    cmd = MoveCmd(movable_obj)
     with pytest.raises(Exception):
-        m = Move(position, velocity)
-        m.execute()
+        cmd.execute()
 
 
 def test_Move_2(mocker):
-    position = Vector([12, 5])
-    velocity = None
+    """
+    Попытка сдвинуть объект, у которого невозможно прочитать
+    значение мгновенной скорости, приводит к ошибке
+    """
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_position")
+    mock.return_value = Vector([12, 5])
+
+    obj = UObject()
+    movable_obj = MoveAdapter(obj)
+    cmd = MoveCmd(movable_obj)
     with pytest.raises(Exception):
-        m = Move(position, velocity)
-        m.execute()
+        cmd.execute()
 
 
-def test_Move_3():
-    position = Vector([12, 5])
-    velocity = Vector([-7, 3])
-    m = Move(position, velocity)
-    # m.execute()
+def test_Move_3(mocker):
+    """
+    Попытка сдвинуть объект, у которого невозможно изменить
+    положение в пространстве, приводит к ошибке
+    """
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_position")
+    mock.return_value = Vector([12, 5])
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_velocity")
+    mock.return_value = Vector([-7, 3])
+    mock = mocker.patch("spacegame.hw05.hw05.MoveAdapter.get_velocity")
+    mock.return_value = ValueError
+
+    obj = UObject()
+    movable_obj = MoveAdapter(obj)
+    cmd = MoveCmd(movable_obj)
     with pytest.raises(Exception):
-        m.set_position([25, -1])
-        # m.set_position(Vector([25, -1]))
-
-
-# def test_Move_1(mocker):
-#     position = Vector([0, 0])
-#     velocity = Vector([0, 0])
-#     m = Move(position, velocity)
-#     mock_position = mocker.patch("hw05.Move.position")
-#     mock_velocity = mocker.patch("hw05.Move.velocity")
-#     mock_position.return_value = Vector([12, 5])
-#     mock_velocity.return_value = Vector([-7, 3])
-#     # print(m.position)
-#     # print(m.velocity)
-#     m.execute()
-#     new_position = m.get_position()
-#     expected_position = Vector([5, 8])
-#     assert new_position == expected_position
+        cmd.execute()
