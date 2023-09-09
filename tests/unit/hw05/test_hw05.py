@@ -5,7 +5,7 @@ from spacegame.hw05.hw05 import (
     IMovable,
     IUObject,
     IVector,
-    MoveAdapter,
+    MovableAdapter,
     MoveCmd,
     UObject,
     Vector,
@@ -31,7 +31,7 @@ def test_Move_0(mocker):
     mock.return_value = Vector([-7, 3])
 
     obj = UObject()
-    movable_obj = MoveAdapter(obj)
+    movable_obj = MovableAdapter(obj)
     cmd = MoveCmd(movable_obj)
     cmd.execute()
     new_position = movable_obj.get_position()
@@ -48,7 +48,7 @@ def test_Move_1(mocker):
     mock.return_value = Vector([-7, 3])
 
     obj = UObject()
-    movable_obj = MoveAdapter(obj)
+    movable_obj = MovableAdapter(obj)
     cmd = MoveCmd(movable_obj)
     with pytest.raises(Exception):
         cmd.execute()
@@ -63,7 +63,7 @@ def test_Move_2(mocker):
     mock.return_value = Vector([12, 5])
 
     obj = UObject()
-    movable_obj = MoveAdapter(obj)
+    movable_obj = MovableAdapter(obj)
     cmd = MoveCmd(movable_obj)
     with pytest.raises(Exception):
         cmd.execute()
@@ -82,7 +82,7 @@ def test_Move_3(mocker):
     mock.return_value = ValueError
 
     obj = UObject()
-    movable_obj = MoveAdapter(obj)
+    movable_obj = MovableAdapter(obj)
     cmd = MoveCmd(movable_obj)
     with pytest.raises(Exception):
         cmd.execute()

@@ -78,23 +78,23 @@ class Vector(IVector):
 
 class IUObject(abc.ABC):
     @abc.abstractmethod
-    def get_property(self, attr: str):
+    def get_property(self, key: str):
         pass
 
     @abc.abstractmethod
-    def set_property(self, attr: str, value: Any):
+    def set_property(self, key: str, value: Any):
         pass
 
 
 class UObject(IUObject):
     def __init__(self):
-        self.hashmap = {}
+        self.hashtable = {}
 
-    def get_property(self, attr: str):
-        return self.hashmap[attr]
+    def get_property(self, key: str):
+        return self.hashtable[key]
 
-    def set_property(self, attr: str, value: Any):
-        self.hashmap[attr] = value
+    def set_property(self, key: str, value: Any):
+        self.hashtable[key] = value
 
 
 class ICommand(abc.ABC):
@@ -117,7 +117,13 @@ class IMovable(abc.ABC):
         pass
 
 
-class MoveAdapter(IMovable):
+class MovableAdapter(IMovable):
+    """
+    Откуда MovableAdapter знает про "direction", "velocity" и др., не относящиеся
+    к этому объекту напрямую по смыслу (move)?
+    В дальнейшем можем отказаться от поворотов и нужно будет править код?
+    """
+
     def __init__(self, o: IUObject):
         self.o = o
 
@@ -125,6 +131,16 @@ class MoveAdapter(IMovable):
         return self.o.get_property("position")
 
     def get_velocity(self):
+        # d = self.o.get_property("direction")
+        # dn = self.o.get_property("direction_numbers")
+        # v = self.o.get_property("velocity")
+        # new_velocity = Vector(
+        #     [
+        #         v[0] * math.cos(float(d) / 360 * dn),
+        #         v[1] * math.sin(float(d) / 360 * dn),
+        #     ]
+        # )
+        # return new_velocity
         return self.o.get_property("velocity")
 
     def set_position(self, position: IVector):
@@ -160,7 +176,7 @@ class IRotable(abc.ABC):
         pass
 
 
-class RotateAdapter(IRotable):
+class RotableAdapter(IRotable):
     def __init__(self, o: IUObject):
         self.o = o
 
@@ -193,20 +209,14 @@ if __name__ == "__main__":
     starship = UObject()
     starship.set_property("position", Vector([12.0, 5.0]))
     starship.set_property("velocity", Vector([-7.0, 3.0]))
-    cmd = MoveCmd(MoveAdapter(starship))
-    cmd.execute()
-    cmd.execute()
-    print(starship.get_property("position"))
-    del starship
-
-    starship = UObject()
     starship.set_property("direction", 0)
     starship.set_property("direction_numbers", 8)
     starship.set_property("angular_velocity", -1)
 
-    cmd = RotateCmd(RotateAdapter(starship))
+    cmd = MoveCmd(MovableAdapter(starship))
     cmd.execute()
-    cmd.execute()
+    print(starship.get_property("position"))
 
+    cmd = RotateCmd(RotableAdapter(starship))
+    cmd.execute()
     print(starship.get_property("direction"))
-    del starship
