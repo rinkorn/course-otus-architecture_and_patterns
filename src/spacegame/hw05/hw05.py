@@ -42,8 +42,8 @@ class Vector(IVector):
     def __init__(self, coords: list):
         if not isinstance(coords, type(self) | list):
             raise TypeError("Wrong type of vector data.")
-        if len(coords) != 2:
-            raise ValueError("Data length must be 2.")
+        if len(coords) == 0:
+            raise ValueError("Data length must be greater than 0.")
         self.coords = coords
 
     def __len__(self):
@@ -73,7 +73,7 @@ class Vector(IVector):
         return self.coords
 
     def __str__(self) -> str:
-        return str(self.coords)
+        return "Vector: " + str(self.coords)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -91,13 +91,13 @@ class IUObject(abc.ABC):
 
 class UObject(IUObject):
     def __init__(self):
-        self.hashtable = {}
+        self.store = {}
 
     def get_property(self, key: str):
-        return self.hashtable[key]
+        return self.store[key]
 
     def set_property(self, key: str, value: Any):
-        self.hashtable[key] = value
+        self.store[key] = value
 
 
 class ICommand(abc.ABC):
