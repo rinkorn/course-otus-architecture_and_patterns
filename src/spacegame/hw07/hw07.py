@@ -19,7 +19,7 @@ class BaseAppException(Exception):
     pass
 
 
-class EmptyCmd(ICommand):
+class DoNothingCmd(ICommand):
     def __init__(self):
         pass
 
@@ -52,10 +52,10 @@ class IExceptionHandler(abc.ABC):
 class ExceptionHandler(IExceptionHandler):
     def __init__(self, queue: IQueue):
         self.queue = queue
-        c = self.cmd_default = EmptyCmd()
+        c = self.cmd_default = DoNothingCmd()
         e = self.exc_default = BaseAppException()
         self.store = defaultdict(dict)
-        self.store[str(type(c))][str(type(e))] = EmptyCmd()
+        self.store[str(type(c))][str(type(e))] = DoNothingCmd()
 
     def handle(self, command: ICommand, exception: Exception):
         cmd_str = str(type(command))
