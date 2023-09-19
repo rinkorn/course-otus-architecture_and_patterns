@@ -1,7 +1,8 @@
 import abc
-from collections import defaultdict
+import datetime as dt
+from collections.abc import Callable
+from itertools import count
 from queue import Queue
-from typing import Any
 
 from spacegame.hw05.hw05 import (
     ICommand,
@@ -19,18 +20,17 @@ class BaseAppException(Exception):
     pass
 
 
-class DoNothingCmd(ICommand):
-    def __init__(self):
-        pass
-
-    def execute(self):
+# %%
+class IExceptionHandler(abc.ABC):
+    @abc.abstractmethod
+    def handle(self):
         pass
 
 
 # %%
 class IQueue(abc.ABC):
     @abc.abstractmethod
-    def put(self, other):
+    def put(self, item):
         pass
 
     @abc.abstractmethod
@@ -43,62 +43,192 @@ class IQueue(abc.ABC):
 
 
 # %%
-class IExceptionHandler(abc.ABC):
-    @abc.abstractmethod
-    def handle(self):
+class DoNothingCmd(ICommand):
+    def execute(self):
         pass
 
 
-class ExceptionHandler(IExceptionHandler):
-    def __init__(self, queue: IQueue):
-        self.queue = queue
-        c = self.cmd_default = DoNothingCmd()
-        e = self.exc_default = BaseAppException()
-        self.store = defaultdict(dict)
-        self.store[str(type(c))][str(type(e))] = DoNothingCmd()
+class HelloWorldPrintCmd(ICommand):
+    def __init__(self):
+        self.msg = "Hello World!"
 
-    def handle(self, command: ICommand, exception: Exception):
-        cmd_str = str(type(command))
-        exc_str = str(type(exception))
-        exc_getted = self.store.get(cmd_str, self.store[self.cmd_default])
-        cmd_getted = exc_getted.get(exc_str, self.exc_default)
-        self.queue.put(cmd_getted)
+    def execute(self):
+        print(self.msg)
+
+
+class SpecialErrorRaiserCmd(ICommand):
+    def __init__(self, exception: Exception = Exception):
+        self.exception = exception
+
+    def execute(self):
+        Error = self.exception
+        raise Error("Raise an error manually.")
 
 
 # %%
-def main(queue):
-    exception_handler = ExceptionHandler(queue)
-    while not queue.empty():
-        cmd = queue.get()
-        try:
-            cmd.execute()
-        except Exception as exc:
-            exception_handler.handle(cmd, exc)
-            # ExceptionHandler.handle(cmd, exc).execute()
-            # IoC.resolve("ExceptionHandler", cmd, exc).execute()
+class LogPrintCmd(ICommand):
+    def __init__(self, cmd, exc):
+        self.cmd = cmd
+        self.exc = exc
+
+    def execute(self):
+        print(
+            f"Time: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.\n"
+            f"Command: {self.cmd.__class__.__name__}.\n"
+            f"Exception: {self.exc.__name__}.\n"
+            f"\n"
+        )
 
 
+class LogWriteCmd(ICommand):
+    def __init__(self, cmd, exc):
+        self.cmd = cmd
+        self.exc = exc
+
+    def execute(self):
+        with open("log.txt", "a") as file:
+            file.write(
+                f"Time: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.\n"
+                f"Command: {self.cmd.__class__.__name__}.\n"
+                f"Exception: {self.exc.__name__}.\n"
+                f"\n"
+            )
+
+
+class RepeateCmd(ICommand):
+    def __init__(self, cmd: ICommand):
+        self.cmd = cmd
+
+    def execute(self):
+        self.cmd.execute()
+
+
+class DoubleRepeateCmd(ICommand):
+    def __init__(self, cmd: ICommand):
+        self.cmd = cmd
+
+    def execute(self):
+        self.cmd.execute()
+
+
+# %%
+class LogPrinterExcHandler(IExceptionHandler):
+    def __init__(self, queue: IQueue):
+        self.queue = queue
+
+    def handle(self, cmd: ICommand, exc: Exception):
+        self.queue.put(LogPrintCmd(cmd, exc))
+
+
+class LogWriterExcHandler(IExceptionHandler):
+    def __init__(self, queue: IQueue):
+        self.queue = queue
+
+    def handle(self, cmd: ICommand, exc: Exception):
+        self.queue.put(LogWriteCmd(exc))
+
+
+class RepeaterExcHandler(IExceptionHandler):
+    def __init__(self, queue: IQueue):
+        self.queue = queue
+
+    def handle(self, cmd: ICommand, exc: Exception):
+        if not isinstance(cmd, RepeateCmd):
+            self.queue.put(RepeateCmd(cmd))
+        else:
+            self.queue.put(LogWriteCmd(cmd, exc))
+
+
+class DoubleRepeaterExcHandler(IExceptionHandler):
+    def __init__(self, queue):
+        self.queue = queue
+        self.store = {}
+
+    def handle(self, cmd: ICommand, exc: Exception):
+        cmd_type_str = cmd.__class__.__name__
+        exc_type_str = exc.__name__
+        key = (cmd_type_str, exc_type_str)
+
+        if not isinstance(cmd, RepeateCmd | DoubleRepeateCmd):
+            self.queue.put(RepeateCmd(cmd))
+            return
+
+        if not isinstance(cmd, DoubleRepeateCmd):
+            self.queue.put(DoubleRepeateCmd(cmd))
+            return
+
+
+class ExceptionHandler(IExceptionHandler):
+    def __init__(self):
+        self.store = {}
+
+    def setup(self, cmd: ICommand, exc: Exception, lambda_func: Callable):
+        # cmd: Move,
+        # exc: ValueError,
+        # (cmd, exc) => queue.put(LogPrinterCmd(cmd, exc))
+        key = (cmd.__name__, exc.__name__)
+        self.store[key] = lambda_func
+
+    def handle(self, cmd: ICommand, exc: Exception):
+        key = (cmd.__class__.__name__, exc.__name__)
+        lambda_func = self.store[key]
+        lambda_func(cmd, exc)
+
+
+# %%
 if __name__ == "__main__":
     spaceship = UObject()
     spaceship.set_property("position", Vector([0.0, 0.0]))
+    # spaceship.set_property("position", Vector([None, 0.0]))
     spaceship.set_property("velocity", Vector([1.0, 1.0]))
-    # spaceship.set_property("velocity", [1.0, 1.0])
     spaceship.set_property("direction", 0)
     spaceship.set_property("direction_numbers", 8)
-    spaceship.set_property("angular_velocity", -1)
+    spaceship.set_property("angular_velocity", 1)
 
     print("Before:")
     print(f"position: {spaceship.get_property('position')}")
     print(f"direction: {spaceship.get_property('direction')}")
     print()
 
-    queue = Queue(maxsize=0)
+    queue = Queue()
     queue.put(MoveCmd(MovableAdapter(spaceship)))
+    queue.put(SpecialErrorRaiserCmd(BaseAppException))
     queue.put(RotateCmd(RotableAdapter(spaceship)))
-    queue.put(MoveCmd(MovableAdapter(spaceship)))
-    queue.put(MoveCmd(MovableAdapter(spaceship)))
-    queue.put(RotateCmd(RotableAdapter(spaceship)))
-    main(queue)
+
+    # handler = LogPrinterExcHandler(queue)
+    # handler = RepeaterExcHandler(queue)
+    # handler = DoubleRepeaterExcHandler(queue)
+    handler = ExceptionHandler()
+    handler.setup(
+        MoveCmd,
+        TypeError,
+        lambda cmd, exc: queue.put(HelloWorldPrintCmd()),
+    )
+    handler.setup(
+        SpecialErrorRaiserCmd,
+        BaseAppException,
+        lambda cmd, exc: queue.put(DoubleRepeateCmd(cmd)),
+    )
+    handler.setup(
+        DoubleRepeateCmd,
+        BaseAppException,
+        lambda cmd, exc: queue.put(RepeateCmd(cmd)),
+    )
+    handler.setup(
+        RepeateCmd,
+        BaseAppException,
+        lambda cmd, exc: queue.put(LogPrintCmd(cmd, exc)),
+    )
+
+    while True and not queue.empty():
+        cmd = queue.get()
+        try:
+            cmd.execute()
+        except Exception as e:
+            exc = type(e)
+            handler.handle(cmd, exc)
+            ## ExceptionHandler.handle(cmd, exc).execute()
+            ## IoC.resolve("ExceptionHandler", cmd, exc).execute()
 
     print("After:")
     print(f"position: {spaceship.get_property('position')}")
