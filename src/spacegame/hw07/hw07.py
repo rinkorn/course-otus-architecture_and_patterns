@@ -1,7 +1,7 @@
 import abc
 import datetime as dt
+from collections import defaultdict
 from collections.abc import Callable
-from itertools import count
 from queue import Queue
 
 from spacegame.hw05.hw05 import (
@@ -145,9 +145,7 @@ class DoubleRepeaterExcHandler(IExceptionHandler):
         self.store = {}
 
     def handle(self, cmd: ICommand, exc: Exception):
-        cmd_type_str = cmd.__class__.__name__
-        exc_type_str = exc.__name__
-        key = (cmd_type_str, exc_type_str)
+        key = (cmd.__class__.__name__, exc.__name__)
 
         if not isinstance(cmd, RepeateCmd | DoubleRepeateCmd):
             self.queue.put(RepeateCmd(cmd))
@@ -158,7 +156,7 @@ class DoubleRepeaterExcHandler(IExceptionHandler):
             return
 
 
-class ExceptionHandler(IExceptionHandler):
+class OldExceptionHandler(IExceptionHandler):
     def __init__(self):
         self.store = {}
 
@@ -175,11 +173,30 @@ class ExceptionHandler(IExceptionHandler):
         lambda_func(cmd, exc)
 
 
+class ExceptionHandler(IExceptionHandler):
+    def __init__(self):
+        self.store = defaultdict(dict)
+
+    def setup(self, cmd: ICommand, exc: Exception, lambda_func: Callable):
+        # cmd: Move,
+        # exc: ValueError,
+        # (cmd, exc) => queue.put(LogPrinterCmd(cmd, exc))
+        cmd_key = cmd.__name__
+        exc_key = exc.__name__
+        self.store[cmd_key][exc_key] = lambda_func
+
+    def handle(self, cmd: ICommand, exc: Exception):
+        cmd_key = cmd.__class__.__name__
+        exc_key = exc.__name__
+        lambda_func = self.store[cmd_key][exc_key]
+        lambda_func(cmd, exc)
+
+
 # %%
 if __name__ == "__main__":
     spaceship = UObject()
-    spaceship.set_property("position", Vector([0.0, 0.0]))
-    # spaceship.set_property("position", Vector([None, 0.0]))
+    # spaceship.set_property("position", Vector([0.0, 0.0]))
+    spaceship.set_property("position", Vector([None, 0.0]))
     spaceship.set_property("velocity", Vector([1.0, 1.0]))
     spaceship.set_property("direction", 0)
     spaceship.set_property("direction_numbers", 8)
@@ -202,7 +219,8 @@ if __name__ == "__main__":
     handler.setup(
         MoveCmd,
         TypeError,
-        lambda cmd, exc: queue.put(HelloWorldPrintCmd()),
+        # lambda cmd, exc: queue.put(HelloWorldPrintCmd()),
+        lambda cmd, exc: queue.put(LogPrintCmd(cmd, exc)),
     )
     handler.setup(
         SpecialErrorRaiserCmd,
