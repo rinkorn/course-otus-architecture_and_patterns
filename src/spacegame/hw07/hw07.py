@@ -2,6 +2,8 @@ import abc
 import datetime as dt
 from collections import defaultdict
 from collections.abc import Callable
+from multiprocessing import Value
+from pathlib import Path
 from queue import Queue
 
 from spacegame.hw05.hw05 import (
@@ -86,7 +88,7 @@ class LogWriteCmd(ICommand):
         self.exc = exc
 
     def execute(self):
-        with open("log.txt", "a") as file:
+        with open(Path("log.txt"), "a") as file:
             file.write(
                 f"Time: {dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.\n"
                 f"Command: {self.cmd.__class__.__name__}.\n"
