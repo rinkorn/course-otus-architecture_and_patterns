@@ -3,13 +3,9 @@ from pathlib import Path
 from queue import Queue
 
 import pytest
-import spacegame
 from spacegame.hw05.hw05 import (
-    ICommand,
     MovableAdapter,
     MoveCmd,
-    RotableAdapter,
-    RotateCmd,
     UObject,
     Vector,
 )
@@ -17,9 +13,6 @@ from spacegame.hw07.hw07 import (
     BaseAppException,
     DoubleRepeateCmd,
     ExceptionHandler,
-    HelloWorldPrintCmd,
-    IExceptionHandler,
-    IQueue,
     LogPrintCmd,
     LogWriteCmd,
     RepeateCmd,
