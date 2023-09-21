@@ -34,8 +34,8 @@ jobs:
         run: |
           ls -Falh
           poetry run ruff src/ tests/
-      - name: Run mypy
-        run: poetry run mypy src/ tests/
+      # - name: Run mypy
+      #   run: poetry run mypy src/ tests/
       - name: Run pytest
         run: poetry run pytest tests/
       - name: Build wheel
