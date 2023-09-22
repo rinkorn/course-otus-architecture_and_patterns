@@ -77,8 +77,6 @@ def test_Move_3(mocker):
     mock = mocker.patch("spacegame.hw05.hw05.MovableAdapter.get_position")
     mock.return_value = Vector([12, 5])
     mock = mocker.patch("spacegame.hw05.hw05.MovableAdapter.get_velocity")
-    mock.return_value = Vector([-7, 3])
-    mock = mocker.patch("spacegame.hw05.hw05.MovableAdapter.get_velocity")
     mock.return_value = ValueError
 
     obj = UObject()
