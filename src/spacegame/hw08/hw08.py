@@ -52,7 +52,7 @@ class CheckFuelVolumeCmd(ICommand):
 
     def execute(self):
         fuel_volume = FuelableAdapter(self.o).get_fuel_volume()
-        if fuel_volume <= 0:
+        if fuel_volume < 0:
             raise CommandException("Fuel is empty")
 
 
@@ -77,7 +77,7 @@ class MacroCmd(ICommand):
     а макрокоманда выбрасывает CommandException.
     """
 
-    def __init__(self, cmds: list):
+    def __init__(self, *cmds):
         self.cmds = cmds
 
     def execute(self):
@@ -88,7 +88,7 @@ class MacroCmd(ICommand):
             raise CommandException("Can't execute MacroCmd")
 
 
-class MoveWithFuelBurnCmd(ICommand):
+class MoveWithFuelBurnCmd(MacroCmd):
     """
     Реализовать команду движения по прямой с расходом топлива,
     используя команды с предыдущих шагов.
@@ -96,13 +96,14 @@ class MoveWithFuelBurnCmd(ICommand):
 
     def __init__(self, o: IUObject):
         self.o = o
+        self.cmds = [
+            CheckFuelVolumeCmd(self.o),
+            MoveCmd(MovableAdapter(self.o)),
+            BurnFuelVolumeCmd(self.o),
+        ]
 
     def execute(self):
-        cmds = []
-        cmds.append(CheckFuelVolumeCmd(self.o))
-        cmds.append(MoveCmd(MovableAdapter(self.o)))
-        cmds.append(BurnFuelVolumeCmd(self.o))
-        MacroCmd(cmds).execute()
+        MacroCmd(*self.cmds).execute()
 
 
 # %%
@@ -138,8 +139,11 @@ class ChangeVelocityCmd(ICommand):
         velocity = ChangableVelocityAdapter(self.o).get_velocity()
         direction = RotableAdapter(self.o).get_direction()
         direction_numbers = RotableAdapter(self.o).get_direction_numbers()
+
         R = math.sqrt(velocity[0] ** 2 + velocity[1] ** 2)
-        alpha = math.radians(float(direction) * 360 / direction_numbers)
+        alpha = math.radians(
+            float(-direction) * 360 / direction_numbers + 90
+        )  # north is a zero with a clock direction
         new_velocity = Vector(
             [
                 R * math.cos(alpha),
@@ -150,7 +154,7 @@ class ChangeVelocityCmd(ICommand):
 
 
 # %%
-class RotateChangeVelocityCmd(ICommand):
+class RotateChangeVelocityCmd(MacroCmd):
     """
     Реализовать команду поворота, которая еще и меняет вектор мгновенной скорости,
     если есть.
@@ -158,21 +162,22 @@ class RotateChangeVelocityCmd(ICommand):
 
     def __init__(self, o: IUObject):
         self.o = o
+        self.cmds = [
+            RotateCmd(RotableAdapter(self.o)),
+            ChangeVelocityCmd(self.o),
+        ]
 
     def execute(self):
-        cmds = []
-        cmds.append(RotateCmd(RotableAdapter(self.o)))
-        cmds.append(ChangeVelocityCmd(self.o))
-        MacroCmd(cmds).execute()
+        MacroCmd(*self.cmds).execute()
 
 
 # %%
 if __name__ == "__main__":
     spaceship = UObject()
     spaceship.set_property("position", Vector([0.0, 0.0]))
-    spaceship.set_property("velocity", Vector([1.0, 1.0]))
+    spaceship.set_property("velocity", Vector([0.0, 1.0]))
     spaceship.set_property("direction", 1)
-    spaceship.set_property("direction_numbers", 8)
+    spaceship.set_property("direction_numbers", 360)
     spaceship.set_property("angular_velocity", 1)
     spaceship.set_property("fuel_volume", 2)
 
