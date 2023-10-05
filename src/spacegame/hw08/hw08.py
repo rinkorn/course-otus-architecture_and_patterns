@@ -96,14 +96,14 @@ class MoveWithFuelBurnCmd(MacroCmd):
 
     def __init__(self, o: IUObject):
         self.o = o
-        self.cmds = [
+        super().__init__(
             CheckFuelVolumeCmd(self.o),
             MoveCmd(MovableAdapter(self.o)),
             BurnFuelVolumeCmd(self.o),
-        ]
+        )
 
     def execute(self):
-        MacroCmd(*self.cmds).execute()
+        super().execute()
 
 
 # %%
@@ -162,13 +162,13 @@ class RotateChangeVelocityCmd(MacroCmd):
 
     def __init__(self, o: IUObject):
         self.o = o
-        self.cmds = [
+        super().__init__(
             RotateCmd(RotableAdapter(self.o)),
             ChangeVelocityCmd(self.o),
-        ]
+        )
 
     def execute(self):
-        MacroCmd(*self.cmds).execute()
+        super().execute()
 
 
 # %%
