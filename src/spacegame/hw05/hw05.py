@@ -39,12 +39,13 @@ class IVector(abc.ABC):
 
 
 class Vector(IVector):
-    def __init__(self, coords: list):
+    def __init__(self, coords: list, eps: float = 1e-7):
         if not isinstance(coords, type(self) | list):
             raise TypeError("Wrong type of vector data.")
         if len(coords) == 0:
-            raise ValueError("Data length must be greater than 0.")
+            raise ValueError("Data dimension must be greater than nothing or zero.")
         self.coords = coords
+        self.eps = eps
 
     def __len__(self):
         return len(self.coords)
@@ -65,7 +66,10 @@ class Vector(IVector):
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Vector):
-            return self.coords == other.coords
+            for coord, coord_other in zip(self.coords, other):
+                if not abs(coord - coord_other) < self.eps:
+                    return False
+            return True
         else:
             raise ValueError("Other object must be Vector.")
 
