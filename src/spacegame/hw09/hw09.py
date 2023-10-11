@@ -1,7 +1,6 @@
 import abc
 import threading
 from collections import defaultdict
-from compileall import compile_dir
 
 from spacegame.hw05.hw05 import ICommand
 
@@ -348,10 +347,11 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
             lambda *args: _UnregisterIoCDependencyCmd(args[0]),
         )
 
-        parent = LeafScope(IoC.resolve("IoC.default_strategy"))
-        # parent = None
-
-        root_scope = _Scope(dependencies, parent)
+        root_scope = _Scope(
+            dependencies,
+            LeafScope(IoC.resolve("IoC.default_strategy")),
+            # parent=None,
+        )
 
         ScopeBasedResolveDependencyStrategy._root = root_scope
 
@@ -369,18 +369,22 @@ if __name__ == "__main__":
 
 
 if __name__ == "__main__":
+    gameID123 = IoC.resolve(
+        "scopes.new",
+        IoC.resolve("scopes.root"),
+    )
+    IoC.resolve(
+        "scopes.current.set",
+        gameID123,
+    )
+
     IoC.resolve(
         "IoC.register",
         "a",
-        lambda *args: f"HELLO a! {args}",
+        lambda *args: f"just a! and params: {args}",
     ).execute()
 
     print(IoC.resolve("a", 123, 456))
-
-    IoC.resolve(
-        "IoC.unregister",
-        "a",
-    ).execute()
 
     IoC.resolve(
         "IoC.unregister",
