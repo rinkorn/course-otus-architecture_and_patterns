@@ -72,24 +72,32 @@ class IThreadLocal:
     def __contains__(self):
         pass
 
+    @abc.abstractstaticmethod
+    def _get_thread_id():
+        pass
+
 
 class ThreadLocal(IThreadLocal):
     def __init__(self):
         self._store = defaultdict(dict)
 
     def __getitem__(self, key: str):
-        thread_id = threading.get_native_id()
+        thread_id = ThreadLocal._get_thread_id()
         if key not in self._store[thread_id]:
             return None
         return self._store[thread_id][key]
 
     def __setitem__(self, key: str, value: any):
-        thread_id = threading.get_native_id()
+        thread_id = ThreadLocal._get_thread_id()
         self._store[thread_id][key] = value
 
     def __contains__(self, key):
-        thread_id = threading.get_native_id()
+        thread_id = ThreadLocal._get_thread_id()
         return key in self._store[thread_id]
+
+    @staticmethod
+    def _get_thread_id():
+        return threading.get_native_id()
 
 
 # %%
@@ -99,7 +107,7 @@ class IScope(abc.ABC):
         pass
 
 
-class Scope(IScope):
+class _Scope(IScope):
     """
     dependencies - словарик, где в виде ключа - зависимость, а в виде значения -
     стратегия (по входным параметрам возвратит ссылку на нужный объект)
@@ -131,7 +139,7 @@ class IoCException(Exception):
     pass
 
 
-class SetupStrategyCmd(ICommand):
+class _SetupStrategyCmd(ICommand):
     def __init__(self, new_strategy):
         self.new_strategy = new_strategy
 
@@ -165,7 +173,7 @@ class IoC(IIoC):
         на IoC._default_strategy, чтобы где-то как-то её подменить или удалить.
         """
         if key == "IoC.setup_strategy":
-            return SetupStrategyCmd(args[0])
+            return _SetupStrategyCmd(args[0])
         elif key == "IoC.default_strategy":
             return IoC._default_strategy
         else:
@@ -185,7 +193,7 @@ class IStrategy(abc.ABC):
 
 
 class ScopeBasedResolveDependencyStrategy(IStrategy):
-    _root: Scope = None
+    _root: _Scope = None
     _current_scopes = ThreadLocal()
 
     @staticmethod
@@ -199,6 +207,7 @@ class ScopeBasedResolveDependencyStrategy(IStrategy):
         if key == "scopes.root":
             return ScopeBasedResolveDependencyStrategy._root
         else:
+            # Не поток устанавливается в scope, а scope устанавливается в потоке.
             scope = ScopeBasedResolveDependencyStrategy._current_scopes["value"]
             if scope is None:
                 scope = ScopeBasedResolveDependencyStrategy._default_scope()
@@ -262,7 +271,7 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
         # scopes.new - команда, которая создаёт storage когда это необходимо
         dependencies.__setitem__(
             "scopes.new",
-            lambda *args: Scope(
+            lambda *args: _Scope(
                 IoC.resolve("scopes.storage"),
                 args[0],
             ),
@@ -276,7 +285,7 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
             lambda *args: current_scope if current_scope is not None else default_scope,
         )
 
-        # scopes.current - в текущем потоке установить scope
+        # scopes.current - устанвоить scope в текущем потоке
         dependencies.__setitem__(
             "scopes.current.set",
             lambda *args: SetScopeInCurrentThreadCmd(args[0]),
@@ -287,7 +296,7 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
             lambda *args: RegisterIoCDependencyCmd(args[0], args[1]),
         )
 
-        scope = Scope(
+        scope = _Scope(
             dependencies=dependencies,
             parent=LeafScope(IoC.resolve("IoC.default_strategy")),
             # parent=None,
