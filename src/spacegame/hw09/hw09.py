@@ -350,7 +350,7 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
         )
 
         parent = LeafScope(IoC.resolve("IoC.default_strategy"))
-        # parent=None
+        # parent = None
 
         root_scope = _Scope(dependencies, parent)
 

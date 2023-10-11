@@ -1,15 +1,36 @@
 import pytest
-from spacegame.hw09.hw09 import InitScopeBasedIoCImplementationCmd, IoC
+from spacegame.hw09.hw09 import (
+    InitScopeBasedIoCImplementationCmd,
+    InitSingleThreadScopeCmd,
+    IoC,
+)
 
 
-def test_root_scope_is_available():
+@pytest.fixture(scope="function")
+def ScopeBasedTests():
     InitScopeBasedIoCImplementationCmd().execute()
+
+
+def test_root_scope_is_available(ScopeBasedTests):
     root_scope = IoC.resolve("scopes.root")
     assert root_scope is not None
 
 
-def test_create_scope_is_possible_at_any_moment():
+def test_11111111111111111111111_in_other_test(ScopeBasedTests):
+    IoC.resolve(
+        "IoC.register",
+        "11111111111111111111111",
+        lambda *args: 1,
+    ).execute()
+    assert IoC.resolve("11111111111111111111111") == 1
+
+
+def test_11111111111111111111111_in_other_test_(ScopeBasedTests):
     InitScopeBasedIoCImplementationCmd().execute()
+    assert IoC.resolve("11111111111111111111111") == 1
+
+
+def test_create_scope_is_possible_at_any_moment(ScopeBasedTests):
     scope = IoC.resolve(
         "scopes.new",
         IoC.resolve("scopes.root"),
@@ -17,8 +38,9 @@ def test_create_scope_is_possible_at_any_moment():
     assert scope is not None
 
 
-def test_registered_dependency_should_handle_resolve_request_with_dependency_name():
-    InitScopeBasedIoCImplementationCmd().execute()
+def test_registered_dependency_should_handle_resolve_request_with_dependency_name(
+    ScopeBasedTests,
+):
     IoC.resolve(
         "scopes.current.set",
         IoC.resolve("scopes.new", IoC.resolve("scopes.root")),
@@ -31,8 +53,7 @@ def test_registered_dependency_should_handle_resolve_request_with_dependency_nam
     assert IoC.resolve("dependency") == 1
 
 
-def test_registered_dependency_can_not_ber_redefined():
-    InitScopeBasedIoCImplementationCmd().execute()
+def test_registered_dependency_can_not_ber_redefined(ScopeBasedTests):
     new_scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
     IoC.resolve("scopes.current.set", new_scope).execute()
     IoC.resolve(
@@ -50,9 +71,7 @@ def test_registered_dependency_can_not_ber_redefined():
         ).execute()
 
 
-def test_resolving_dependency_depends_on_current_scope():
-    InitScopeBasedIoCImplementationCmd().execute()
-
+def test_resolving_dependency_depends_on_current_scope(ScopeBasedTests):
     scope1 = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
     IoC.resolve("scopes.current.set", scope1).execute()
     IoC.resolve(
@@ -75,9 +94,7 @@ def test_resolving_dependency_depends_on_current_scope():
     assert IoC.resolve("dependency") == 1
 
 
-def test_resolving_dependency_depends_on_scope_hierarchy():
-    InitScopeBasedIoCImplementationCmd().execute()
-
+def test_resolving_dependency_depends_on_scope_hierarchy(ScopeBasedTests):
     scope1 = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
     IoC.resolve("scopes.current.set", scope1).execute()
     IoC.resolve(
