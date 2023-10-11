@@ -103,6 +103,7 @@ class Scope(IScope):
     """
     dependencies - словарик, где в виде ключа - зависимость, а в виде значения -
     стратегия (по входным параметрам возвратит ссылку на нужный объект)
+    Не поток устанавливается в scope, а scope устанавливается в потоке.
     """
 
     def __init__(self, dependencies: IDictionary, parent: IScope):
@@ -272,7 +273,7 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
         default_scope = ScopeBasedResolveDependencyStrategy._default_scope
         dependencies.__setitem__(
             "scopes.current",
-            current_scope if current_scope is not None else default_scope,
+            lambda *args: current_scope if current_scope is not None else default_scope,
         )
 
         # scopes.current - в текущем потоке установить scope
@@ -311,7 +312,7 @@ if __name__ == "__main__":
     IoC.resolve(
         "IoC.register",
         "a",
-        lambda *args: f"HELLO a! {args[0]}",
+        lambda *args: f"HELLO a! {args}",
     ).execute()
-    a = IoC.resolve("a", 123)
+    a = IoC.resolve("a", 123, 456)
     print(a)
