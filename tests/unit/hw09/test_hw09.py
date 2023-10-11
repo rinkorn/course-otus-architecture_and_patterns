@@ -7,19 +7,14 @@ def test_root_scope_is_available():
     root_scope = IoC.resolve("scopes.root")
     assert root_scope is not None
 
-    IoC.resolve("IoC.register", "a", lambda *args: 123).execute()
-    # IoC.resolve("IoC.unregister", "a").execute()
-
 
 def test_create_scope_is_possible_at_any_moment():
     InitScopeBasedIoCImplementationCmd().execute()
-    parent_scope = IoC.resolve("scopes.root")
-    new_scope = IoC.resolve(
+    scope = IoC.resolve(
         "scopes.new",
-        parent_scope,
+        IoC.resolve("scopes.root"),
     )
-    assert new_scope is not None
-    assert IoC.resolve("a") == 123
+    assert scope is not None
 
 
 def test_registered_dependency_should_handle_resolve_request_with_dependency_name():
