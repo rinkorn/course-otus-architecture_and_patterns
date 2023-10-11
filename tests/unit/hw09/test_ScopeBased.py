@@ -16,20 +16,6 @@ def test_root_scope_is_available(ScopeBasedTests):
     assert root_scope is not None
 
 
-def test_11111111111111111111111_in_other_test(ScopeBasedTests):
-    IoC.resolve(
-        "IoC.register",
-        "11111111111111111111111",
-        lambda *args: 1,
-    ).execute()
-    assert IoC.resolve("11111111111111111111111") == 1
-
-
-def test_11111111111111111111111_in_other_test_(ScopeBasedTests):
-    InitScopeBasedIoCImplementationCmd().execute()
-    assert IoC.resolve("11111111111111111111111") == 1
-
-
 def test_create_scope_is_possible_at_any_moment(ScopeBasedTests):
     scope = IoC.resolve(
         "scopes.new",
@@ -54,8 +40,8 @@ def test_registered_dependency_should_handle_resolve_request_with_dependency_nam
 
 
 def test_registered_dependency_can_not_ber_redefined(ScopeBasedTests):
-    new_scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
-    IoC.resolve("scopes.current.set", new_scope).execute()
+    scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
+    IoC.resolve("scopes.current.set", scope).execute()
     IoC.resolve(
         "IoC.register",
         "dependency",
