@@ -23,6 +23,10 @@ class IDictionary(abc.ABC):
     def __contains__(self, key: str):
         pass
 
+    @abc.abstractmethod
+    def __delitem__(sefl, key: str):
+        pass
+
 
 class Dictionary(IDictionary):
     def __init__(self):
@@ -32,30 +36,44 @@ class Dictionary(IDictionary):
         return self._store[key]
 
     def __setitem__(self, key: str, value: callable):
-        self._store[key] = value
+        if key not in self:
+            self._store[key] = value
+        else:
+            raise AttributeError()
 
     def __contains__(self, key: str):
         return key in self._store.keys()
+
+    def __delitem__(self, key: str):
+        del self._store[key]
 
 
 class ThreadSafeDictionary(IDictionary):
     def __init__(self):
         self._store = {}
-        self._lock = threading.Lock()
 
     def __getitem__(self, key: str):
-        with self._lock:
+        with threading.Lock():
             return self._store.get(key)
 
     def __setitem__(self, key: str, value: callable):
-        with self._lock:
-            self._store[key] = value
+        with threading.Lock():
+            if key not in self:
+                self._store[key] = value
+            else:
+                raise AttributeError()
 
     def __contains__(self, key: str):
-        return key in self._store
+        with threading.Lock():
+            return key in self._store
+
+    def __delitem__(self, key: str):
+        with threading.Lock():
+            del self._store[key]
 
 
 ConcurrentDictionary = ThreadSafeDictionary
+# ConcurrentDictionary = Dictionary
 
 
 # %%
@@ -72,12 +90,25 @@ class IThreadLocal:
     def __contains__(self):
         pass
 
-    @abc.abstractstaticmethod
-    def _get_thread_id():
-        pass
-
 
 class ThreadLocal(IThreadLocal):
+    def __init__(self):
+        self._store = threading.local()
+
+    def __getitem__(self, key: str):
+        value = None
+        if key in self:
+            value = self._store.__getattribute__(key)
+        return value
+
+    def __setitem__(self, key: str, value: any):
+        self._store.__setattr__(key, value)
+
+    def __contains__(self, key):
+        return key in self._store.__dict__.keys()
+
+
+class ThreadLocal2(IThreadLocal):
     def __init__(self):
         self._store = defaultdict(dict)
 
@@ -127,11 +158,11 @@ class _Scope(IScope):
 
 
 class LeafScope(IScope):
-    def __init__(self, f: callable) -> None:
-        self._f = f
+    def __init__(self, strategy: callable):
+        self._strategy = strategy
 
-    def resolve(self, key: str, *args: any) -> any:
-        return self._f(key, *args)
+    def resolve(self, key: str, *args: any):
+        return self._strategy(key, *args)
 
 
 # %%
@@ -173,7 +204,8 @@ class IoC(IIoC):
         на IoC._default_strategy, чтобы где-то как-то её подменить или удалить.
         """
         if key == "IoC.setup_strategy":
-            return _SetupStrategyCmd(args[0])
+            strategy = args[0]
+            return _SetupStrategyCmd(strategy)
         elif key == "IoC.default_strategy":
             return IoC._default_strategy
         else:
@@ -188,7 +220,7 @@ class IoC(IIoC):
 # %%
 class IStrategy(abc.ABC):
     @abc.abstractstaticmethod
-    def resolve(self, key: str, *args: any) -> any:
+    def resolve(self, key: str, *args: any):
         pass
 
 
@@ -215,10 +247,6 @@ class ScopeBasedResolveDependencyStrategy(IStrategy):
 
 
 # %%
-def RegisterIoCDependencyException(Exception):
-    pass
-
-
 class InitSingleThreadScopeCmd(ICommand):
     def execute(self) -> None:
         IoC.resolve(
@@ -228,23 +256,43 @@ class InitSingleThreadScopeCmd(ICommand):
         ).execute()
 
 
-class RegisterIoCDependencyCmd(ICommand):
+def RegisterIoCDependencyException(Exception):
+    pass
+
+
+def UnregisterIoCDependencyException(Exception):
+    pass
+
+
+class _RegisterIoCDependencyCmd(ICommand):
     def __init__(self, key: str, strategy: callable):
         self.key = key
         self.strategy = strategy
 
     def execute(self):
         try:
-            scope = ScopeBasedResolveDependencyStrategy._current_scopes["value"]
-            scope.dependencies.__setitem__(
+            current_scope = ScopeBasedResolveDependencyStrategy._current_scopes["value"]
+            current_scope.dependencies.__setitem__(
                 self.key,
                 self.strategy,
             )
-        except Exception:
+        except BaseException as e:
             raise RegisterIoCDependencyException("Can't register dependency")
 
 
-class SetScopeInCurrentThreadCmd(ICommand):
+class _UnregisterIoCDependencyCmd(ICommand):
+    def __init__(self, key: str):
+        self.key = key
+
+    def execute(self):
+        try:
+            current_scope = ScopeBasedResolveDependencyStrategy._current_scopes["value"]
+            current_scope.dependencies.__delitem__(self.key)
+        except BaseException as e:
+            raise UnregisterIoCDependencyException("Can't unregister dependency")
+
+
+class _SetScopeInCurrentThreadCmd(ICommand):
     def __init__(self, scope):
         self.scope = scope
 
@@ -288,28 +336,32 @@ class InitScopeBasedIoCImplementationCmd(ICommand):
         # scopes.current - устанвоить scope в текущем потоке
         dependencies.__setitem__(
             "scopes.current.set",
-            lambda *args: SetScopeInCurrentThreadCmd(args[0]),
+            lambda *args: _SetScopeInCurrentThreadCmd(args[0]),
         )
 
         dependencies.__setitem__(
             "IoC.register",
-            lambda *args: RegisterIoCDependencyCmd(args[0], args[1]),
+            lambda *args: _RegisterIoCDependencyCmd(args[0], args[1]),
         )
 
-        scope = _Scope(
-            dependencies=dependencies,
-            parent=LeafScope(IoC.resolve("IoC.default_strategy")),
-            # parent=None,
+        dependencies.__setitem__(
+            "IoC.unregister",
+            lambda *args: _UnregisterIoCDependencyCmd(args[0]),
         )
 
-        ScopeBasedResolveDependencyStrategy._root = scope
+        parent = LeafScope(IoC.resolve("IoC.default_strategy"))
+        # parent=None
+
+        root_scope = _Scope(dependencies, parent)
+
+        ScopeBasedResolveDependencyStrategy._root = root_scope
 
         IoC.resolve(
             "IoC.setup_strategy",
             ScopeBasedResolveDependencyStrategy.resolve,
         ).execute()
 
-        SetScopeInCurrentThreadCmd(scope).execute()
+        _SetScopeInCurrentThreadCmd(root_scope).execute()
 
 
 if __name__ == "__main__":
@@ -323,5 +375,15 @@ if __name__ == "__main__":
         "a",
         lambda *args: f"HELLO a! {args}",
     ).execute()
-    a = IoC.resolve("a", 123, 456)
-    print(a)
+
+    print(IoC.resolve("a", 123, 456))
+
+    IoC.resolve(
+        "IoC.unregister",
+        "a",
+    ).execute()
+
+    IoC.resolve(
+        "IoC.unregister",
+        "a",
+    ).execute()
