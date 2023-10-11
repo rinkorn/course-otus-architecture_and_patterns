@@ -73,7 +73,6 @@ class ThreadSafeDictionary(IDictionary):
 
 
 ConcurrentDictionary = ThreadSafeDictionary
-# ConcurrentDictionary = Dictionary
 
 
 # %%
