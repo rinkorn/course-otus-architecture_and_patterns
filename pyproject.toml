@@ -8,6 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.10"
 pygame = "^2.5.1"
+python-ioc = "^1.13.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.4.0"
