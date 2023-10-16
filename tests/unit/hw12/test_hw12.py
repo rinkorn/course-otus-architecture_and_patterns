@@ -29,8 +29,6 @@ def initialization():
 def test_adapter_register(initialization):
     # pre
     # action
-    # arg0 = Class****able
-    # arg1 = obj
     IoC.resolve(
         "IoC.register",
         "Adapter",
