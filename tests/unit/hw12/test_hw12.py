@@ -79,7 +79,7 @@ def test_adapter_generate_attributes(initialization):
     assert all(name in attr_names_imovable for name in attr_names_movadapt)
 
 
-def test_adapter_get(initialization):
+def test_adapter_generate_object(initialization):
     # assign
     IoC.resolve(
         "IoC.register",
@@ -90,10 +90,26 @@ def test_adapter_get(initialization):
     obj.set_property("position", Vector([12.0, 5.0]))
     obj.set_property("velocity", Vector([-7.0, 3.0]))
     # action
+    IoC.resolve("Adapter", IMovable, obj)
+
+
+def test_adapter_get(initialization):
+    # assign
+    IoC.resolve(
+        "IoC.register",
+        "Adapter",
+        lambda *args: Adapter.generate(args[0])(args[1]),
+    ).execute()
+    obj = UObject()
+    obj.set_property("position", Vector([12.0, 5.0]))
+    obj.set_property("velocity", Vector([-7.0, 3.0]))
     movable_obj = IoC.resolve("Adapter", IMovable, obj)
+    # action
+    position = movable_obj.get_position()
+    velocity = movable_obj.get_velocity()
     # assert
-    assert movable_obj.get_position() == Vector([12.0, 5.0])
-    assert movable_obj.get_velocity() == Vector([-7.0, 3.0])
+    assert position == Vector([12.0, 5.0])
+    assert velocity == Vector([-7.0, 3.0])
 
 
 def test_adapter_set(initialization):
@@ -106,9 +122,8 @@ def test_adapter_set(initialization):
     obj = UObject()
     obj.set_property("position", Vector([12.0, 5.0]))
     obj.set_property("velocity", Vector([-7.0, 3.0]))
-    # action
     movable_obj = IoC.resolve("Adapter", IMovable, obj)
-    movable_obj.get_position() == Vector([12.0, 5.0])
+    # action
     movable_obj.set_position(Vector([123, 321]))
     # assert
     assert movable_obj.get_position() == Vector([123, 321])
