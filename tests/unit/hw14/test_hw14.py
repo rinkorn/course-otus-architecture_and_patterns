@@ -15,6 +15,7 @@ def test_HardStopCmd_should_stop_processor_immediately():
     # assign
     processor_context = ContextDictionary()
     InitEventLoopContextCmd(processor_context).execute()
+    # event = threading.Event()
     queue = processor_context["queue"]
     queue.put(DoNothingCmd())
     queue.put(HardStopCmd(processor_context))
@@ -22,6 +23,8 @@ def test_HardStopCmd_should_stop_processor_immediately():
     # action
     processor = EventLoop(processor_context)
     processor.wait()
+    # while not event.is_set():
+    #     pass
     # assert
     assert queue.qsize() == 1
 
@@ -30,17 +33,16 @@ def test_SoftStopCmd_should_stop_processor_when_queue_is_empty():
     # assign
     processor_context = ContextDictionary()
     InitEventLoopContextCmd(processor_context).execute()
-    queue = processor_context["queue"]
     event = threading.Event()
+    queue = processor_context["queue"]
     queue.put(DoNothingCmd())
     queue.put(SoftStopCmd(processor_context))
     queue.put(DoNothingCmd())
     queue.put(EventSetterCmd(event))
-
     # action
     processor = EventLoop(processor_context)
-    processor.wait()
-    # while not event.is_set():
-    #     pass
+    # processor.wait()
+    while not event.is_set():
+        pass
     # assert
     assert queue.empty()

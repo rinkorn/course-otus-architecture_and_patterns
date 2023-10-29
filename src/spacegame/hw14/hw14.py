@@ -11,8 +11,8 @@ from spacegame.hw05.hw05 import (
     UObject,
     Vector,
 )
-from spacegame.hw07.hw07 import DoNothingCmd, IQueue
-from spacegame.hw09.hw09 import Dictionary, IDictionary, IoC
+from spacegame.hw07.hw07 import IQueue
+from spacegame.hw09.hw09 import IDictionary
 
 
 class ContextDictionary(IDictionary):
