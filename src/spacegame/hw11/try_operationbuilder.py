@@ -29,24 +29,16 @@ if __name__ == "__main__":
 
     IoC.resolve(
         "IoC.register",
-        "command.Move",
+        "Commands.Move",
         lambda *args: MoveCmd(MovableAdapter(args[0])),
     ).execute()
 
-    # IoC.resolve(
-    #     "IoC.register",
-    #     "command.Move",
-    #     Generator.get(typeof(MoveCmd)),
-    # ).execute()]
+    IoC.resolve("commands.Move", uobject)
 
-    IoC.resolve("command.Move", uobject)
-    # IoC.resolve("command.Rotate", uobject)
-    # IoC.resolve("command.Fireable", uobject)
+    IoC.resolve(
+        "IoC.register",
+        "Operations.Movement",
+        lambda *args: OperationBuilder("operations.Movement").build(args[0]),
+    ).execute()
 
-    # IoC.resolve(
-    #     "IoC.register",
-    #     "operations.Movement",
-    #     lambda *args: OperationBuilder("operations.movement").build(),
-    # ).execute()
-
-    # IoC.resolve("operations.Movement", uobject)
+    IoC.resolve("Operations.Movement", uobject)
