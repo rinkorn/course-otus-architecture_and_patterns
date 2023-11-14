@@ -264,10 +264,7 @@ class _RegisterIoCDependencyCmd(ICommand):
     def execute(self):
         try:
             current_scope = ScopeBasedResolveDependencyStrategy._current_scopes["value"]
-            current_scope.dependencies.__setitem__(
-                self.key,
-                self.strategy,
-            )
+            current_scope.dependencies.__setitem__(self.key, self.strategy)
         except BaseException as e:
             raise RegisterIoCDependencyException("Can't register dependency")
 

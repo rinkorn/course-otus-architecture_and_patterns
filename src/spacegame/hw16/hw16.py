@@ -17,7 +17,7 @@ class StopCmd(ICommand):
 
 
 class LambdaCmd(ICommand):
-    def __init__(self, action):
+    def __init__(self, action: callable):
         self.action = action
 
     def execute(self):
@@ -87,7 +87,9 @@ if __name__ == "__main__":
 
         name = args[0]
         IoC.resolve(
-            "IoC.register", name + ".stop", lambda *args: StopCmd(True)
+            "IoC.register",
+            name + ".stop",
+            lambda *args: StopCmd(True),
         ).execute()
         IoC.resolve(
             "IoC.register",
