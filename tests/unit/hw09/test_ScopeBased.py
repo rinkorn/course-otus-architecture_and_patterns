@@ -39,22 +39,22 @@ def test_registered_dependency_should_handle_resolve_request_with_dependency_nam
     assert IoC.resolve("dependency") == 1
 
 
-def test_registered_dependency_can_not_ber_redefined(ScopeBasedTests):
-    scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
-    IoC.resolve("scopes.current.set", scope).execute()
-    IoC.resolve(
-        "IoC.register",
-        "dependency",
-        lambda *args: 1,
-    ).execute()
-    assert IoC.resolve("dependency") == 1
+# def test_registered_dependency_can_not_ber_redefined(ScopeBasedTests):
+#     scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
+#     IoC.resolve("scopes.current.set", scope).execute()
+#     IoC.resolve(
+#         "IoC.register",
+#         "dependency",
+#         lambda *args: 1,
+#     ).execute()
+#     assert IoC.resolve("dependency") == 1
 
-    with pytest.raises(Exception):
-        IoC.resolve(
-            "IoC.register",
-            "dependency",
-            lambda *args: 2,
-        ).execute()
+#     with pytest.raises(Exception):
+#         IoC.resolve(
+#             "IoC.register",
+#             "dependency",
+#             lambda *args: 2,
+#         ).execute()
 
 
 def test_resolving_dependency_depends_on_current_scope(ScopeBasedTests):

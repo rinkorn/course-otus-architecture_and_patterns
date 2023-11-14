@@ -48,18 +48,16 @@ class GameCmd(ICommand):
         # очередь игры не обязательно потокобезопасная, т.к.
         # игра уже лежит в потокобезопасной очереди
         # self._queue = queue.Queue()
-        self.game_scope_id = str(uuid.uuid4())  # game UUID
-        IoC.resolve("scopes.new", self.game_scope_id, parent_scope)
         receiver = IoC.resolve("IReceiver")
-        IoC.resolve("scopes.current.set", self.game_scope_id).execute()
+
+        self._game_scope = IoC.resolve("scopes.new", parent_scope)
+        IoC.resolve("scopes.current.set", self._game_scope).execute()
         # sngleton object receiver
         IoC.resolve("IoC.register", "queue", lambda *args: receiver).execute()
 
         game_objects = Dictionary()
         IoC.resolve(
-            "IoC.register",
-            "game_objects",
-            lambda *args: game_objects,
+            "IoC.register", "game_objects", lambda *args: game_objects
         ).execute()
         players: int = IoC.resolve("Players")
         spaceships: int = IoC.resolve("Spaceships")
@@ -75,7 +73,7 @@ class GameCmd(ICommand):
                 # IoC.resolve("Spaceship.locate", spaceship).execute()
 
     def execute(self):
-        IoC.resolve("scopes.current.set", self.game_scope_id).execute()
+        IoC.resolve("scopes.current.set", self._game_scope).execute()
         recevier: IReceiver = IoC.resolve("queue")
         cmd = recevier.receive()
         cmd.execute()
@@ -89,9 +87,7 @@ if __name__ == "__main__":
 
         name = args[0]
         IoC.resolve(
-            "IoC.register",
-            name + ".stop",
-            lambda *args: StopCmd(True),
+            "IoC.register", name + ".stop", lambda *args: StopCmd(True)
         ).execute()
         IoC.resolve(
             "IoC.register",

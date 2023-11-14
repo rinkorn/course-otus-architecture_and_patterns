@@ -384,3 +384,23 @@ if __name__ == "__main__":
         "IoC.unregister",
         "a",
     ).execute()
+
+# %%
+if __name__ == "__main__":
+    scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
+    IoC.resolve("scopes.current.set", scope).execute()
+    IoC.resolve(
+        "IoC.register",
+        "dependency",
+        lambda *args: 1,
+    ).execute()
+    IoC.resolve("dependency") == 1
+
+    scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
+    IoC.resolve("scopes.current.set", scope).execute()
+    IoC.resolve(
+        "IoC.register",
+        "dependency",
+        lambda *args: 1,
+    ).execute()
+    IoC.resolve("dependency") == 1
