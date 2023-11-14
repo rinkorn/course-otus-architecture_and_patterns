@@ -35,10 +35,7 @@ class Dictionary(IDictionary):
         return self._store[key]
 
     def __setitem__(self, key: str, value: callable):
-        if key not in self:
-            self._store[key] = value
-        else:
-            raise AttributeError()
+        self._store[key] = value
 
     def __contains__(self, key: str):
         return key in self._store.keys()
@@ -57,10 +54,7 @@ class ThreadSafeDictionary(IDictionary):
 
     def __setitem__(self, key: str, value: callable):
         with threading.Lock():
-            if key not in self:
-                self._store[key] = value
-            else:
-                raise AttributeError()
+            self._store[key] = value
 
     def __contains__(self, key: str):
         with threading.Lock():

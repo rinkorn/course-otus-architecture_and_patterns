@@ -43,7 +43,7 @@ class Adapter(IAdapter):
                 class_definition += (
                     f"    def {attr_name}(self):\n"
                     f"        return {IoC.__name__}.resolve(\n"
-                    f'            "{class_module}.{class_name}:{attr_name[4:]}.get",\n'
+                    f'            "Interfaces.{class_name}:{attr_name[4:]}.get",\n'
                     "            self.o,\n"
                     "        )\n"
                     "\n"
@@ -52,7 +52,7 @@ class Adapter(IAdapter):
                 class_definition += (
                     f"    def {attr_name}(self, value):\n"
                     f"        return {IoC.__name__}.resolve(\n"
-                    f'            "{class_module}.{class_name}:{attr_name[4:]}.set",\n'
+                    f'            "Interfaces.{class_name}:{attr_name[4:]}.set",\n'
                     "            self.o,\n"
                     "            value,\n"
                     "        )"
@@ -64,7 +64,7 @@ class Adapter(IAdapter):
                 class_definition += (
                     f"    def {attr_name}(self, *args):\n"
                     "        return IoC.resolve(\n"
-                    f'            "{class_module}.{class_name}:{attr_name}",\n'
+                    f'            "Interfaces.{class_name}:{attr_name}",\n'
                     "            *args,\n"
                     "        )\n"
                     "\n"
@@ -85,17 +85,17 @@ class MoveCmdPluginCmd(ICommand):
     def execute(self):
         IoC.resolve(
             "IoC.register",
-            f"{IMovable.__module__}.IMovable:position.get",
+            "Interfaces.IMovable:position.get",
             lambda *args: args[0].get_property("position"),
         ).execute()
         IoC.resolve(
             "IoC.register",
-            f"{IMovable.__module__}.IMovable:velocity.get",
+            "Interfaces.IMovable:velocity.get",
             lambda *args: args[0].get_property("velocity"),
         ).execute()
         IoC.resolve(
             "IoC.register",
-            f"{IMovable.__module__}.IMovable:position.set",
+            "Interfaces.IMovable:position.set",
             lambda *args: args[0].set_property("position", args[1]),
         ).execute()  # тут могло быть что-то сложное (вплоть до нейронок)
 
@@ -104,22 +104,22 @@ class RotateCmdPluginCmd(ICommand):
     def execute(self):
         IoC.resolve(
             "IoC.register",
-            f"{IRotable.__module__}.IRotable:direction.get",
+            "Interfaces.IRotable:direction.get",
             lambda *args: args[0].get_property("direction"),
         ).execute()
         IoC.resolve(
             "IoC.register",
-            f"{IRotable.__module__}.IRotable:direction_numbers.get",
+            "Interfaces.IRotable:direction_numbers.get",
             lambda *args: args[0].get_property("direction_numbers"),
         ).execute()
         IoC.resolve(
             "IoC.register",
-            f"{IRotable.__module__}.IRotable:angular_velocity.get",
+            "Interfaces.IRotable:angular_velocity.get",
             lambda *args: args[0].get_property("angular_velocity"),
         ).execute()
         IoC.resolve(
             "IoC.register",
-            f"{IRotable.__module__}.IRotable:direction.set",
+            "Interfaces.IRotable:direction.set",
             lambda *args: args[0].set_property("direction", args[1]),
         ).execute()
 

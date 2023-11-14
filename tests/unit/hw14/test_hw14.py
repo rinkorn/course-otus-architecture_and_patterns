@@ -1,48 +1,63 @@
 import threading
 
 from spacegame.hw07.hw07 import DoNothingCmd
+from spacegame.hw09.hw09 import Dictionary
 from spacegame.hw14.hw14 import (
-    ContextDictionary,
-    EventLoop,
     EventSetterCmd,
     HardStopCmd,
-    InitEventLoopContextCmd,
+    HardStoppableAdapter,
+    InitProcessorContextCmd,
+    Processable,
+    Processor,
     SoftStopCmd,
+    SoftStoppableAdapter,
 )
 
 
 def test_HardStopCmd_should_stop_processor_immediately():
     # assign
-    processor_context = ContextDictionary()
-    InitEventLoopContextCmd(processor_context).execute()
-    # event = threading.Event()
-    queue = processor_context["queue"]
+    obj = Dictionary()
+    InitProcessorContextCmd(obj).execute()
+    queue = obj["queue"]
     queue.put(DoNothingCmd())
-    queue.put(HardStopCmd(processor_context))
+    queue.put(HardStopCmd(HardStoppableAdapter(obj)))
     queue.put(DoNothingCmd())
     # action
-    processor = EventLoop(processor_context)
+    processor = Processor(Processable(obj))
     processor.wait()
-    # while not event.is_set():
-    #     pass
     # assert
     assert queue.qsize() == 1
 
 
 def test_SoftStopCmd_should_stop_processor_when_queue_is_empty():
     # assign
-    processor_context = ContextDictionary()
-    InitEventLoopContextCmd(processor_context).execute()
-    event = threading.Event()
-    queue = processor_context["queue"]
+    obj = Dictionary()
+    InitProcessorContextCmd(obj).execute()
+    queue = obj["queue"]
     queue.put(DoNothingCmd())
-    queue.put(SoftStopCmd(processor_context))
+    queue.put(SoftStopCmd(SoftStoppableAdapter(obj)))
+    queue.put(DoNothingCmd())
+    # action
+    processor = Processor(Processable(obj))
+    processor.wait()
+    # assert
+    assert queue.empty()
+
+
+def test_SoftStopCmd_should_stop_processor_when_queue_is_empty_with_event_setter():
+    # assign
+    obj = Dictionary()
+    InitProcessorContextCmd(obj).execute()
+    event = threading.Event()
+    queue = obj["queue"]
+    queue.put(DoNothingCmd())
+    queue.put(SoftStopCmd(SoftStoppableAdapter(obj)))
     queue.put(DoNothingCmd())
     queue.put(EventSetterCmd(event))
     # action
-    processor = EventLoop(processor_context)
-    # processor.wait()
+    processor = Processor(Processable(obj))
     while not event.is_set():
         pass
+    processor.wait()
     # assert
     assert queue.empty()

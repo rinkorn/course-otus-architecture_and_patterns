@@ -2,44 +2,19 @@ import abc
 import threading
 from queue import Queue
 
-from spacegame.hw05.hw05 import (
-    ICommand,
-    MovableAdapter,
-    MoveCmd,
-    RotableAdapter,
-    RotateCmd,
-    UObject,
-    Vector,
-)
-from spacegame.hw07.hw07 import IQueue
-from spacegame.hw09.hw09 import IDictionary
+from spacegame.hw05.hw05 import ICommand
+from spacegame.hw07.hw07 import DoNothingCmd, IQueue
+from spacegame.hw09.hw09 import Dictionary, IDictionary
 
 
-class ContextDictionary(IDictionary):
-    def __init__(self):
-        self._store = {}
-
-    def __getitem__(self, key: str):
-        return self._store[key]
-
-    def __setitem__(self, key: str, value: any):
-        self._store[key] = value
-
-    def __contains__(self, key: str):
-        return key in self._store.keys()
-
-    def __delitem__(self, key: str):
-        del self._store[key]
-
-
+# %%
 class BlockingCollection(IQueue):
     """Должна быть потокобезопасной!!!"""
 
     def __init__(self, maxsize=0):
         self._queue = Queue(maxsize)
 
-    def put(self, item, block=True, timeout=1):
-        # self._queue.put(item, block=block, timeout=timeout)
+    def put(self, item):
         self._queue.put(item)
 
     def get(self):
@@ -52,66 +27,66 @@ class BlockingCollection(IQueue):
         return self._queue.qsize()
 
 
-class IEventLoop(abc.ABC):
+# %%
+class IProcessable(abc.ABC):
     @abc.abstractmethod
-    def __init__(self, queue: IQueue):
+    def can_continue(self):
         pass
 
     @abc.abstractmethod
-    def wait(self):
+    def thread_timeout(self):
+        pass
+
+    @abc.abstractmethod
+    def process(self):
         pass
 
 
-class ProcessStrategy:
-    @staticmethod
-    def process(context):
-        queue = context["queue"]
-        cmd = queue.get()
-        try:
-            cmd.execute()
-            print(f"Executed: {cmd}")
-        except Exception as e:
-            exc = type(e)
-            print(f"Error {exc} in {type(cmd)}")
-            # handler.handle(cmd, exc)
-            ## ExceptionHandler.handle(cmd, exc).execute()
-            ## IoC.resolve("ExceptionHandler", cmd, exc).execute()
-
-
-class EventLoop(IEventLoop):
-    # possible names: MyThread, ServerThread, EventLoop
+class Processable(IProcessable):
     def __init__(self, context: IDictionary):
+        self.o = context
+
+    def can_continue(self):
+        return self.o["can_continue"]
+
+    def thread_timeout(self):
+        return self.o["thread_timeout"]
+
+    def process(self):
+        self.o["process"].__call__()
+
+
+class Processor:
+    def __init__(self, context: IProcessable):
         self.context = context
-        self.thread = threading.Thread(target=self.loop, daemon=True)
+        self.thread = threading.Thread(
+            target=self.evaluation,
+            daemon=True,
+        )
         self.thread.start()
 
     def wait(self):
-        self.thread.join(timeout=self.context["thread_join_timeout"])
+        self.thread.join(
+            timeout=self.context.thread_timeout(),
+        )
 
-    def loop(self):
-        while self.context["can_continue"]:
-            cmd = self.context["queue"].get()
-            try:
-                cmd.execute()
-                print(f"Executed: {cmd}")
-            except Exception as e:
-                exc = type(e)
-                print(f"Error {exc} in {type(cmd)}")
-                # handler.handle(cmd, exc)
-                ## ExceptionHandler.handle(cmd, exc).execute()
-                ## IoC.resolve("ExceptionHandler", cmd, exc).execute()
+    def evaluation(self):
+        while self.context.can_continue():
+            self.context.process()
 
 
-class InitEventLoopContextCmd(ICommand):
+class InitProcessorContextCmd(ICommand):
     def __init__(self, context: IDictionary):
-        self.context = context
+        self.o = context
 
     def execute(self):
+        queue = BlockingCollection()
+
         def process():
             cmd = queue.get()
             try:
                 cmd.execute()
-                print(f"Executed: {cmd}")
+                print(f"Executed: {cmd.__class__.__name__}")
             except Exception as e:
                 exc = type(e)
                 try:
@@ -122,34 +97,83 @@ class InitEventLoopContextCmd(ICommand):
                 except Exception as e:
                     print(f"Fatal error! {exc} in {type(cmd)}")
 
-        self.context["process"] = process
-        self.context["can_continue"] = True
-        self.context["queue"] = BlockingCollection()
-        self.context["thread_join_timeout"] = 2
+        self.o["can_continue"] = True
+        self.o["queue"] = queue
+        self.o["process"] = process
+        self.o["thread_timeout"] = 10
+
+
+class IHardStoppable(abc.ABC):
+    @abc.abstractmethod
+    def set_can_continue(self, value):
+        pass
+
+
+class HardStoppableAdapter(IHardStoppable):
+    def __init__(self, uobject: IDictionary):
+        self.o = uobject
+
+    def set_can_continue(self, value: bool):
+        self.o.__setitem__("can_continue", value)
 
 
 class HardStopCmd(ICommand):
-    def __init__(self, context: IDictionary):
-        self.context = context
+    def __init__(self, context: IHardStoppable):
+        self.o = context
 
     def execute(self):
-        self.context["can_continue"] = False
+        self.o.set_can_continue(False)
+
+
+class ISoftStoppable(abc.ABC):
+    @abc.abstractmethod
+    def get_process(self):
+        pass
+
+    @abc.abstractmethod
+    def set_process(self, value):
+        pass
+
+    @abc.abstractmethod
+    def get_queue(self):
+        pass
+
+    @abc.abstractmethod
+    def set_can_continue(self, value):
+        pass
+
+
+class SoftStoppableAdapter(ISoftStoppable):
+    def __init__(self, context: IDictionary):
+        self.o = context
+
+    def get_process(self):
+        return self.o.__getitem__("process")
+
+    def set_process(self, value):
+        self.o.__setitem__("process", value)
+
+    def get_queue(self):
+        return self.o.__getitem__("queue")
+
+    def set_can_continue(self, value):
+        self.o.__setitem__("can_continue", value)
 
 
 class SoftStopCmd(ICommand):
-    def __init__(self, context: IDictionary):
-        self.context = context
+    def __init__(self, context: ISoftStoppable):
+        self.o = context
 
     def execute(self):
-        previous_process = self.context["process"]
+        previous_process = self.o.get_process()
 
         def process():
             previous_process()
-            queue = self.context["queue"]
+            queue = self.o.get_queue()
             if queue.qsize() == 0:
-                self.context["can_continue"] = False
+                self.o.set_can_continue(False)
 
-        self.context["process"] = process
+        self.o.set_process(process)
 
 
 class EventSetterCmd(ICommand):
@@ -160,42 +184,39 @@ class EventSetterCmd(ICommand):
         self.event.set()
 
 
+def test_HardStopCmd_Should_Stop_Processor_Immediately():
+    # assign
+    processor_context = Dictionary()
+    InitProcessorContextCmd(processor_context).execute()
+    queue = processor_context["queue"]
+    queue.put(DoNothingCmd())
+    queue.put(HardStopCmd(HardStoppableAdapter(processor_context)))
+    queue.put(DoNothingCmd())
+    # action
+    processor = Processor(Processable(processor_context))
+    processor.wait()
+    # assert
+    assert queue.qsize() == 1
+    print("test passed")
+
+
+def test_SoftStopCmd_Should_Stop_Processor_When_Queue_Is_Empty():
+    # assign
+    processor_context = Dictionary()
+    InitProcessorContextCmd(processor_context).execute()
+    queue = processor_context["queue"]
+    queue.put(DoNothingCmd())
+    queue.put(SoftStopCmd(SoftStoppableAdapter(processor_context)))
+    queue.put(DoNothingCmd())
+    # action
+    processor = Processor(Processable(processor_context))
+    processor.wait()
+    # assert
+    assert queue.empty()
+    print("test passed")
+
+
 # %%
 if __name__ == "__main__":
-    # test_EventLoopCanRead
-    spaceship = UObject()
-    spaceship.set_property("position", Vector([12.0, 5.0]))
-    spaceship.set_property("velocity", Vector([1.0, 1.0]))
-    spaceship.set_property("direction", 0)
-    spaceship.set_property("direction_numbers", 8)
-    spaceship.set_property("angular_velocity", 5)
-
-    # event = threading.Event()
-
-    # pre
-    context = ContextDictionary()
-    InitEventLoopContextCmd(context).execute()
-
-    queue = context["queue"]
-    queue.put(MoveCmd(MovableAdapter(spaceship)))
-    queue.put(RotateCmd(RotableAdapter(spaceship)))
-    queue.put(MoveCmd(MovableAdapter(spaceship)))
-    queue.put(RotateCmd(RotableAdapter(spaceship)))
-    # queue.put(HardStopCmd(context))
-    queue.put(MoveCmd(MovableAdapter(spaceship)))
-    # queue.put(EventSetterCmd(event))
-
-    # act
-    processor = EventLoop(context)
-    # while not event.is_set():
-    #     pass
-    processor.wait()
-
-    # post
-    if queue.empty():
-        print("queue is empty")
-    assert queue.empty() is True
-
-    print()
-    print(spaceship.get_property("position"))
-    print(spaceship.get_property("direction"))
+    test_HardStopCmd_Should_Stop_Processor_Immediately()
+    test_SoftStopCmd_Should_Stop_Processor_When_Queue_Is_Empty()

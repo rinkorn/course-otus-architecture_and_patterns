@@ -20,7 +20,7 @@ class ServerThread:
         ServerThread._receiver = receiver
 
     @staticmethod
-    def _action():
+    def process():
         cmd = ServerThread._receiver.receive()
         try:
             cmd.execute()
@@ -37,9 +37,9 @@ class ServerThread:
     def start(self):
         def loop():
             while not ServerThread._stop:
-                ServerThread._action()
+                ServerThread.process()
 
-        thread = threading.Thread(loop)
+        thread = threading.Thread(target=loop)
         thread.start()
 
 
@@ -59,7 +59,7 @@ class SoftStopCmd(ICommand):
         self._thread = thread
 
     def execute(self):
-        old = self._thread._action
+        old = self._thread.process
 
         def empty():
             self._thread.stop = True
@@ -71,12 +71,12 @@ class SoftStopCmd(ICommand):
             self._thread._receiver.empty(empty)
             self._thread._receiver.not_empty(not_empty)
 
-        self._thread._action = action
+        self._thread.process = action
 
 
 class InitCmd(ICommand):
     def __init__(self, context: IDictionary):
-        self._context = context
+        self.context = context
 
     def execute(self):
         queue = BlockingCollection()
@@ -96,9 +96,9 @@ class InitCmd(ICommand):
                 except Exception as e:
                     print(f"Fatal error! {exc} in {type(cmd)}")
 
-        self._context.__setitem__("can_continue", True)
-        self._context.__setitem__("queue", queue)
-        self._context.__setitem__("process", process)
+        self.context.__setitem__("can_continue", True)
+        self.context.__setitem__("queue", queue)
+        self.context.__setitem__("process", process)
 
 
 # %%
