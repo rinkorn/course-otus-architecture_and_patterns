@@ -9,7 +9,32 @@ from spacegame.hw09.hw09 import Dictionary, IDictionary
 
 # %%
 class BlockingCollection(IQueue):
-    """Должна быть потокобезопасной!!!"""
+    """Должна быть потокобезопасной, т.е. put and get в очередь
+    можно из разных потоков блокируемым способом.
+    После take очередь заснёт.
+    """
+
+    def __init__(self, maxsize=0):
+        self._queue = Queue(maxsize)
+
+    def put(self, item):
+        self._queue.put(item)
+
+    def get(self):
+        return self._queue.get()
+
+    def empty(self):
+        return self._queue.empty()
+
+    def qsize(self):
+        return self._queue.qsize()
+
+
+class NonBlockingCollection(IQueue):
+    """Не потокобезопасная, т.к. это очередь самой игры,
+    которая и так будет находиться внутри потокобезопасного
+    потока.
+    """
 
     def __init__(self, maxsize=0):
         self._queue = Queue(maxsize)

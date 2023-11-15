@@ -105,17 +105,17 @@ class ThreadLocal2(IThreadLocal):
         self._store = defaultdict(dict)
 
     def __getitem__(self, key: str):
-        thread_id = ThreadLocal._get_thread_id()
+        thread_id = self._get_thread_id()
         if key not in self._store[thread_id]:
             return None
         return self._store[thread_id][key]
 
     def __setitem__(self, key: str, value: any):
-        thread_id = ThreadLocal._get_thread_id()
+        thread_id = self._get_thread_id()
         self._store[thread_id][key] = value
 
     def __contains__(self, key):
-        thread_id = ThreadLocal._get_thread_id()
+        thread_id = self._get_thread_id()
         return key in self._store[thread_id]
 
     @staticmethod
@@ -286,10 +286,7 @@ class _SetScopeInCurrentThreadCmd(ICommand):
         self.scope = scope
 
     def execute(self):
-        ScopeBasedResolveDependencyStrategy._current_scopes.__setitem__(
-            "value",
-            self.scope,
-        )
+        ScopeBasedResolveDependencyStrategy._current_scopes["value"] = self.scope
 
 
 class InitScopeBasedIoCImplementationCmd(ICommand):
@@ -360,13 +357,13 @@ if __name__ == "__main__":
 
 
 if __name__ == "__main__":
-    gameID123 = IoC.resolve(
+    game_scope = IoC.resolve(
         "scopes.new",
         IoC.resolve("scopes.root"),
     )
     IoC.resolve(
         "scopes.current.set",
-        gameID123,
+        game_scope,
     )
 
     IoC.resolve(
@@ -386,6 +383,9 @@ if __name__ == "__main__":
 if __name__ == "__main__":
     scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
     IoC.resolve("scopes.current.set", scope).execute()
+    print(id(IoC.resolve("scopes.root")))
+    print(id(scope))
+    print(id(IoC.resolve("scopes.current")))
     IoC.resolve(
         "IoC.register",
         "dependency",
@@ -395,6 +395,9 @@ if __name__ == "__main__":
 
     scope = IoC.resolve("scopes.new", IoC.resolve("scopes.root"))
     IoC.resolve("scopes.current.set", scope).execute()
+    print(id(IoC.resolve("scopes.root")))
+    print(id(scope))
+    print(id(IoC.resolve("scopes.current")))
     IoC.resolve(
         "IoC.register",
         "dependency",
